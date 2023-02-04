@@ -2,6 +2,9 @@ import sqlite3 as sl
 import pandas as pd
 import os
 
+# Currently the code uses raw SQL queries. This leads to uglyness like converting numbers to strings and then back again.
+# Should be changed to directly use Pandas' sqlite integration.
+
 # Here the code is using con.execute() directly, however to make the code portable a 'cursor' should first be created and 
 # the execute statement run on that cursor.
 
