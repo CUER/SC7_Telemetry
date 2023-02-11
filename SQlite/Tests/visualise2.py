@@ -8,7 +8,7 @@ import pandas as pd
 import os
 import servicesqlite as serv
 import numpy as np
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 
 app = Dash(__name__)
 
@@ -25,7 +25,7 @@ dbf.loc[len(dbf)] = prev_entry
 db.write(prev_entry)
 step=1
 
-# fig2 = px.line(dbf, x="timestamp", y=["car_speed", "temperature", "humidity"])
+fig = px.line(dbf, x="timestamp", y=["car_speed", "temperature", "humidity"], render_mode="webgl")
 
 app.layout = html.Div(children=[
     # html.H1(children='Hello Dash'),
@@ -39,10 +39,11 @@ app.layout = html.Div(children=[
     # ),
     dcc.Graph(
         id='live-graph',
+        figure = fig
     ),
-    dcc.Graph(
-        id='live-graph-2',
-    ),
+    # dcc.Graph(
+    #     id='live-graph-2',
+    # ),
     # dcc.Graph(
     #     id='live-graph-2',
     # ),
@@ -56,18 +57,13 @@ app.layout = html.Div(children=[
 ])
 
 @app.callback(
-    [Output('live-graph', 'figure'), Output('live-graph-2', 'figure')], Input('graph-update', 'n_intervals')
+    Output('live-graph', 'extendData'), Input('graph-update', 'n_intervals'), State('update-plot', 'figure')
 )
 def update_graph_scatter(n):
     a = np.random.randint(-step, step+1, size=4)
     a[0] = 1
     print(a)
     dbf.loc[len(dbf)] = dbf.loc[len(dbf) - 1] + a
-
-    # using webgl to plot with much better performance than SVG
-    fig = px.line(dbf, x="timestamp", y=["car_speed", "temperature", "humidity"], render_mode="webgl")
-
-    return fig, fig
 
 if __name__ == '__main__':
     app.run_server(debug=False)
