@@ -94,7 +94,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  char msgTemplate[] = "Counter: %d\r\n";
+  char msgTemplate[] = "%d,%d,%d,%d\r\n";
   char msg[20];
 
   int counter = 0;
@@ -104,7 +104,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	sprintf(msg, msgTemplate, counter);
+	sprintf(msg, msgTemplate, counter, counter+1, counter+2, counter+3);
+
 	if (counter >= 100){
 		counter = 0;
 	}
@@ -112,7 +113,9 @@ int main(void)
 
 	//Transmit Messages on UART channels.
 	HAL_UART_Transmit(&huart1, (const uint8_t*)msg, strlen(msg), 100);
+	HAL_UART_Transmit(&huart2, (const uint8_t*)msg, strlen(msg), 100);
 	counter = counter+1;
+	HAL_Delay(50);
 
 
   }
