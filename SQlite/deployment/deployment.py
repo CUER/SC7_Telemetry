@@ -16,7 +16,7 @@ print(f"Listening on port {arduino.port}")
     # x = arduino.read()
     # print(x)
     
-while True:
+def get_readings():
     x = arduino.readline()
 
     # print(int.from_bytes(x, byteorder="little"))
@@ -24,5 +24,7 @@ while True:
     y=[]
     for item in x:
         y.append(int(item))
+    
+    return y
 
 
