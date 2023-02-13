@@ -19,4 +19,4 @@ while True:
     a = np.random.randint(-step, step+1, size=4)
     a[0] = 1
     next_data += a
-    time.sleep(0.2)
+    time.sleep(1)
