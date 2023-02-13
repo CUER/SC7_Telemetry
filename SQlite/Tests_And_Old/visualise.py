@@ -62,6 +62,7 @@ def update_graph_scatter(n):
     a = np.random.randint(-step, step+1, size=4)
     a[0] = 1
     print(a)
+    print(len(dbf))
     dbf.loc[len(dbf)] = dbf.loc[len(dbf) - 1] + a
 
     # using webgl to plot with much better performance than SVG

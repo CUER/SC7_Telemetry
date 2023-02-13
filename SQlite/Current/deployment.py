@@ -1,6 +1,7 @@
 import serial
 import threading
 import time
+import servicesqlite as serv
  
 arduino = serial.Serial(
     port='COM6',
@@ -11,11 +12,6 @@ arduino = serial.Serial(
     timeout=1
 )
     
-print(f"Listening on port {arduino.port}")
-# while True:
-    # x = arduino.read()
-    # print(x)
-    
 def get_readings():
     x = arduino.readline()
 
@@ -23,8 +19,9 @@ def get_readings():
     x= x.split(",")
     y=[]
     for item in x:
-        y.append(int(item))
+        y.append(float(item))
     
     return y
 
-
+# def get_readings():
+#     return [5,3,4,8]
