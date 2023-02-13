@@ -47,14 +47,12 @@ app.layout = html.Div(children=[
 ])
 
 @app.callback(
-    [Output('live-graph', 'figure'), Output('live-graph-2', 'figure')], [Input('graph-update', 'n_intervals'), Input('live-graph', 'relayoutData')]
+    [Output('live-graph', 'figure'), Output('live-graph-2', 'figure')], [Input('graph-update', 'n_intervals')]
 )
-def update_graph_scatter(n, relayout_data):
+def update_graph_scatter(n):
     global dbf
     new_data = db.read_new()
     dbf = dbf.append(new_data, ignore_index=True)
-
-    print(relayout_data)
 
     # using webgl to plot with much better performance than SVG
     fig = px.line(dbf, x="timestamp", y=["car_speed", "temperature", "humidity"], render_mode="webgl")
