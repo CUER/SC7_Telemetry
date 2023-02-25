@@ -4,6 +4,11 @@
 
 # Look into Write Ahead Logging for faster simulatneous sqlite read & writes. https://stackoverflow.com/questions/10325683/can-i-read-and-write-to-a-sqlite-database-concurrently-from-multiple-connections
 
+# May wish to have orjson installed to improve performance. pip install orjson
+
+# For even better performance looking into clientside callbacks
+# also background callbacks, only useful for calls longer than ~30s (I think) so not useful for our ends
+
 import os
 
 import pandas as pd
@@ -20,6 +25,7 @@ app = Dash(__name__)
 
 dir_path = os.path.dirname(os.path.realpath(__file__)) # path python file is located in. Which is DIFFERENT to current working directory (where the python file is being run from).
 db_path = dir_path + "\\servicesqlite2.db"
+db = serv.DB(dir_path + "\\servicesqlite2.db")
 
 # try:
 #     os.remove(db_path)
