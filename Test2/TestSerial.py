@@ -2,7 +2,7 @@ import serial
 import time
 
 serialPort = serial.Serial(
-    port = "COM4",
+    port = "COM7",
     baudrate=9600,
     bytesize=8,
     stopbits=serial.STOPBITS_ONE
