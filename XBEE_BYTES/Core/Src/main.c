@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,6 +50,8 @@ ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT]; /* Ethernet Tx DMA Descriptor
 
 ETH_HandleTypeDef heth;
 
+RTC_HandleTypeDef hrtc;
+
 UART_HandleTypeDef huart3;
 UART_HandleTypeDef huart6;
 
@@ -56,6 +59,10 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
+typedef enum { false, true } bool;
+bool readyToSend = true;
+RTC_TimeTypeDef sTime;
+RTC_DateTypeDef sDate;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,7 +72,12 @@ static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_USART6_UART_Init(void);
+static void MX_RTC_Init(void);
 /* USER CODE BEGIN PFP */
+
+static void setRTCTime(char* inputTime);
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+
 
 /* USER CODE END PFP */
 
@@ -81,6 +93,9 @@ static void MX_USART6_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	char time[14];
+	bool timeset = false;
+	char currentTime[9];
 
   /* USER CODE END 1 */
 
@@ -106,32 +121,64 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_USART6_UART_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+  /*while(!timeset){
+	  if (HAL_UART_Receive(&huart3, (uint8_t *) currentTime, sizeof(currentTime), 1000) == HAL_OK){
+		  if (currentTime[8]=='*'){
+			  //Time Correctly recorded
+			  currentTime[8]='\0';
+			  setRTCTime(currentTime);
+			  HAL_UART_Transmit(&huart6, (uint8_t *)"set\n", sizeof((uint8_t *)"set"), 100);
+			  timeset = true;
+			  break;
+		  }
+
+	  }
+  }*/
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  float send_data[] = {0,0,0,0};
+  float send_data[] = {0,0,0,0,0,0};
+
+
 
   uint8_t start_msg[] = "START";
-  HAL_UART_Transmit(&huart6, (uint8_t*)(start_msg), 5, 100);
-  HAL_UART_Transmit(&huart3, (uint8_t*)(start_msg), 5, 100);
+  if(readyToSend){
+      HAL_UART_Transmit_IT(&huart3, (uint8_t*)(start_msg), 5);
+      readyToSend = false;
+  }
+  //HAL_UART_Transmit(&huart3, (uint8_t*)(start_msg), 5, 100);
 
   int counter = 0;
   int timeline = 0;
   while (1)
   {
     /* USER CODE END WHILE */
-	for (int i=0; i<3; i++) {
-		send_data[i+1] = counter+i;
-	}
-	send_data[0] = timeline;
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Transmit(&huart6, (uint8_t*)(send_data), 16, 100);
-    HAL_UART_Transmit(&huart3, (uint8_t*)(send_data), 16, 100);
+	  for(int i = 3; i<(sizeof(send_data)/sizeof(float)); i++){
+		  send_data[i] = counter+i-3;
+	  }
+
+	  HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+	  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+	  send_data[2] = (float)(sTime.Seconds);
+	  send_data[1] = (float)(sTime.Minutes);
+	  send_data[0] = (float)(sTime.Hours);
+
+	  //sprintf(time, "Time:%02d:%02d:%02d\n", sTime.Hours, sTime.Minutes, sTime.Seconds);
+
+	  if(readyToSend){
+		 HAL_UART_Transmit_IT(&huart3, (uint8_t*)(send_data), 24);
+		 readyToSend = false;
+	  } else {
+		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+	  }
+    //HAL_UART_Transmit(&huart3, (uint8_t*)(send_data), 24, 100);
 
 	if (counter >= 100){
 		counter = 0;
@@ -139,6 +186,7 @@ int main(void)
 	counter = counter+1;
 	timeline = timeline+1;
 	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+	HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -160,8 +208,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -234,6 +283,69 @@ static void MX_ETH_Init(void)
   /* USER CODE BEGIN ETH_Init 2 */
 
   /* USER CODE END ETH_Init 2 */
+
+}
+
+/**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN Check_RTC_BKUP */
+
+  /* USER CODE END Check_RTC_BKUP */
+
+  /** Initialize RTC and set the Time and Date
+  */
+  sTime.Hours = 0x0;
+  sTime.Minutes = 0x0;
+  sTime.Seconds = 0x0;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sDate.WeekDay = RTC_WEEKDAY_SATURDAY;
+  sDate.Month = RTC_MONTH_MARCH;
+  sDate.Date = 0x4;
+  sDate.Year = 0x23;
+
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
 
 }
 
@@ -390,6 +502,37 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
+/**
+ * @brief Set Initial RTC Values
+ * @retval None
+ */
+
+static void setRTCTime(char* inputTime)
+{
+	char *delim = ":";
+	char hours[] ="00";
+	char minutes[]="00";
+	char seconds[]="00";
+
+	char *token = strtok(inputTime, delim);
+	strcpy(hours, token);
+	token = strtok(NULL, delim);
+	strcpy(minutes, token);
+	token = strtok(NULL, delim);
+	strcpy(seconds, token);
+	sTime.Hours = (uint8_t)atoi(hours);
+	sTime.Minutes = (uint8_t)(uint8_t)atoi(minutes);
+	sTime.Seconds = (uint8_t)(uint8_t)atoi(seconds);
+	HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+	readyToSend = true;
+	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+}
 
 /* USER CODE END 4 */
 
