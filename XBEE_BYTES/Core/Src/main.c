@@ -148,7 +148,7 @@ int main(void)
 
   uint8_t start_msg[] = "START";
   if(readyToSend){
-      HAL_UART_Transmit_IT(&huart3, (uint8_t*)(start_msg), 5);
+      HAL_UART_Transmit_IT(&huart6, (uint8_t*)(start_msg), 5);
       readyToSend = false;
   }
   //HAL_UART_Transmit(&huart3, (uint8_t*)(start_msg), 5, 100);
@@ -173,7 +173,7 @@ int main(void)
 	  //sprintf(time, "Time:%02d:%02d:%02d\n", sTime.Hours, sTime.Minutes, sTime.Seconds);
 
 	  if(readyToSend){
-		 HAL_UART_Transmit_IT(&huart3, (uint8_t*)(send_data), 24);
+		 HAL_UART_Transmit_IT(&huart6, (uint8_t*)(send_data), 24);
 		 readyToSend = false;
 	  } else {
 		  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
