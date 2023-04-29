@@ -1,3 +1,5 @@
+# This file writes example dummy data to the database in a loop.
+
 import os
 import numpy as np
 import pandas as pd

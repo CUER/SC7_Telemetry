@@ -1,3 +1,5 @@
+# This file connects over serial to the radio module and receives data continuously.
+
 import serial
 import os
 import servicesqlite as serv
@@ -12,15 +14,13 @@ arduino = serial.Serial(
 )
 
 dir_path = os.path.dirname(os.path.realpath(__file__)) # path python file is located in. Which is DIFFERENT to current working directory (where the python file is being run from).
-db_path = dir_path + "\\servicesqlite2.db"
-db = serv.DB(dir_path + "\\servicesqlite2.db")
+db_path = dir_path + "\\servicesqlite.db"
+db = serv.DB(dir_path + "\\servicesqlite.db")
     
 print(f"hhListening on port {arduino.port} at {arduino.baudrate} baud...")
 while True:
     x = arduino.readline()
-    # print(x)
 
-    # print(int.from_bytes(x, byteorder="little"))
     if x:
         try:
             x = x.decode().split(",")
@@ -35,6 +35,3 @@ while True:
                 print("Error: Could not write data. Data is of wrong length")
         except:
             pass
-
-# def get_readings():
-#     return [5,3,4,8]

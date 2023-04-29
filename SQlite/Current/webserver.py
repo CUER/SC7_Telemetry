@@ -1,4 +1,4 @@
-# RUN USING `py visualise.py` and
+# RUN USING `py webserver.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 # Vscode debug does not work for some reason, despite name indeed == "__main__".
 
